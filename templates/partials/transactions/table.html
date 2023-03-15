@@ -1,0 +1,113 @@
+<div class="container pt-5">
+  <div class="row mb-3">
+    <div class="col-md-5">
+      <form action="">
+        <div class="input-group">
+          <input type="text" class="form-control" id="search-input" placeholder="Search...">
+          <div class="input-group-append">
+            <button class="btn btn-secondary" type="button" id="search-button">
+              <i class="fa fa-search"></i>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="col-md-2">
+      <form action="#" method="post">
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <label class="input-group-text" for="filter-select">Filter By:</label>
+          </div>
+          <select class="custom-select" id="filter-select">
+            <option value="0">All</option>
+            <option value="4">Account Number</option>
+            <option value="6">Amount</option>
+            <option value="2">Bank Name</option>
+            <option value="7">Date</option>
+            <option value="3">Sort Code</option>
+            <option value="5">Transaction Number</option>
+            <option value="1">Vendor Name</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    
+  </div>
+  
+  <table class="table table-hover mt-3">
+    <thead>
+      <tr>
+        <th scope="col"></th>
+        <th scope="col">Bank ID</th>
+        <th scope="col">Date</th>
+        <th scope="col">Amount</th>
+        <th scope="col">Currency</th>
+        <th scope="col">Exchange Rate</th>
+        <th scope="col">Payment Code</th>
+        <th scope="col">Vendor ID</th>
+      </tr>
+      <tr>
+        <th></th>
+        <th scope="row"></th>
+        <th></th>
+        <th></th>
+        <th></th>
+        <th></th>
+        <th></th>
+        <th>
+          <form action="">
+            <div class="input-group">
+              <input type="text" class="form-control" id="search-vendor-id" placeholder="Vendor ID.....">
+              <div class="input-group-append">
+                <button class="btn btn-secondary" type="button" id="search-button">
+                  <i class="fa fa-search"></i>
+                </button>
+              </div>
+            </div>
+          </form>
+          <!-- Search Results will be displayed here -->
+          <div id="search-results">
+  
+          </div>
+  
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% csrf_token %}
+      <div id="table-body">
+        {% if transactions %}
+        {% for transaction in transactions %}
+        <tr>
+          <td>
+            <input type="checkbox" name="transaction" value="{{ transaction.id }}">
+          </td>
+          <td>{{ transaction.idbank }}</td>
+          <td>{{ transaction.datermit }}</td>
+          <td>{{ transaction.amtpaym }}</td>
+          <td>{{ transaction.codecurn }}</td>
+          <td>{{ transaction.rateexchhc }}</td>
+          <td>{{ transaction.paymcode }}</td>
+          <td>{{ transaction.idvend }}</td>
+        </tr>
+        {% endfor %}
+  
+        {% else %}
+        <tr>
+          <td colspan="8">No transactions found</td>
+        </tr>
+        {% endif %}
+      </div>
+  
+  
+      {% if request.path == '/payment-api/dashboard/transactions/' %}
+      <!-- Render the "Process Transaction" button -->
+      <form action="#" method="post">
+        {% csrf_token %}
+        <button class="btn btn-primary" id="process-btn" disabled>Process Selected Transaction(s)</button>
+      </form>
+      {% endif %}
+    </tbody>
+  </table>
+  
+</div>

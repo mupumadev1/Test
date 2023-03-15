@@ -1,0 +1,17 @@
+{% extends 'base2.html' %}
+{% load static %}
+
+
+{% block title %}
+    Transaction History
+{% endblock %}
+
+{% block content %}
+    
+    {% include  'partials/transactions/table.html' %}
+    
+{% endblock %}
+
+{% block extra-scripts %}
+    <script src="{% static 'js/process-transaction.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,11 @@
+.form-control {
+    width: 70%;
+    padding: 0.7rem .75rem;
+}
+
+.border {
+    border: 1px solid;
+    margin-top: 10rem;
+    width: 50%;
+    padding: 3rem;
+}

@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap');
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html{
+    font-family: 'Montserrat', sans-serif!important;
+    height: 100%!important;
+}
+
+.unstyle-anchor {
+    color: inherit;
+    text-decoration: none;
+    background-color: transparent;
+    border: none;
+    outline: none;
+}
+
+.cursor-pointor {
+    cursor: pointer;
+}
+
+/* User Settings Start */
+
+.settings {
+    color: #1c1e21;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+    padding-right: 5px;
+    width: 190px;
+}

@@ -1,0 +1,95 @@
+{% extends 'base2.html' %}
+{% load static %}
+
+{% block title %}
+    Settings
+{% endblock %}
+
+
+{% block content %}
+    
+    <div class="container pt-5 ">
+        <div class="row gy-5">
+            <div class="col mb-5">
+                <h3>General Account Settings</h3>
+            
+                <ul class="list-unstyled">
+                    <li class="row settings">
+                        <h5 class="col">Name</h5>
+                        <span class="col h5">Jane Doe</span>
+                        <span class="col h5">
+
+                            <a href="#">Edit</a>
+                        </span>
+                    </li>
+                </ul>
+
+            </div>
+            <div class="col">
+                <h3>Logins and Password</h3>
+                <ul class="list-unstyled">
+                  <li class="row settings">
+                    <div class="col">
+                      <form action="#" method="post">
+                        <div class="form-group row">
+                          <label for="password" class="col-md-4 col-form-label">Current Password</label>
+                          <div class="col-md-6">
+                            <input type="password" class="form-control" name="password" id="password" maxlength="12" disabled {% if default_password %} value="{{ default_password }}" {% endif %}>
+                            <a href="#"  onclick="showPassword('password')">Show Password</a>
+                          </div>
+                        </div>
+              
+                        <div class="form-group row d-none">
+                          <label for="new-password" class="col-md-4 col-form-label">New Password</label>
+                          <div class="col-md-6">
+                            <input class="form-control" type="password" name="new-password" id="new-password">
+                            <a href="#"  onclick="showPassword('new-password')">Show Password</a>
+                          </div>
+                        </div>
+              
+                        <div class="form-group row d-none">
+                          <label for="confirm-password" class="col-md-4 col-form-label">Confirm Password</label>
+                          <div class="col-md-6">
+                            <input class="form-control" type="password" name="confirm-password" id="confirm-password">
+                            <a href="#"  onclick="showPassword('confirm-password')">Show Password</a>
+                          </div>
+                        </div>
+              
+                        <div class="form-group row">
+                          <div class="col-md-4"></div>
+                          <div class="col-md-6">
+                            <a class="btn btn-primary" id="change-password-btn">Change Password</a>
+                            <button type="submit" class="btn btn-primary d-none" id="submit-change-password-btn">Change Password</button>
+                            <a class="btn btn-primary d-none" id="close-change-password-btn">Exit</a>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </li>
+                </ul>
+            </div>
+              
+        </div>
+
+        <div>
+            <h3 class="text-center">Activity Log</h3>
+            
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th class="col-md-2">Date</th>
+                        <th class="col-md-2">Login Time</th>
+                        <th class="col-md-2">Duration</th>
+                        <th class="col-md-2">Actions</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+
+
+{% block extra-scripts %}
+    <script src="{% static 'js/user-settings.js' %}"></script>
+{% endblock %}
