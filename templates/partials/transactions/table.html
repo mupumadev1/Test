@@ -66,16 +66,18 @@
             </div>
           </form>
           <!-- Search Results will be displayed here -->
-          <div id="search-results">
+          <div id="search-results" class="position-relative">
   
           </div>
   
         </th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="table-body">
+     <form action="#" method="post">
+
       {% csrf_token %}
-      <div id="table-body">
+      <div id="transaction-table">
         {% if transactions %}
         {% for transaction in transactions %}
         <tr>
@@ -98,15 +100,16 @@
         </tr>
         {% endif %}
       </div>
-  
-  
+
       {% if request.path == '/payment-api/dashboard/transactions/' %}
       <!-- Render the "Process Transaction" button -->
-      <form action="#" method="post">
-        {% csrf_token %}
         <button class="btn btn-primary" id="process-btn" disabled>Process Selected Transaction(s)</button>
-      </form>
       {% endif %}
+
+     </form>
+  
+  
+      
     </tbody>
   </table>
   
