@@ -31,3 +31,8 @@ html{
     padding-right: 5px;
     width: 190px;
 }
+
+/* Bootstrap 4.5.0 Edits*/
+.modal-lg {
+	max-width: 1000px!important;
+}

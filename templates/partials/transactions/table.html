@@ -1,3 +1,6 @@
+<!--Include popup.html-->
+{% include  'partials/transactions/popup.html'%}
+
 <div class="container pt-5">
   <div class="row mb-3">
     <div class="col-md-5">
@@ -38,13 +41,14 @@
     <thead>
       <tr>
         <th scope="col"></th>
-        <th scope="col">Bank ID</th>
         <th scope="col">Date</th>
         <th scope="col">Amount</th>
         <th scope="col">Currency</th>
-        <th scope="col">Exchange Rate</th>
-        <th scope="col">Payment Code</th>
-        <th scope="col">Vendor ID</th>
+        <th scope="col">Invoice Number</th>
+        <th scope="col">Beneficiary ID</th>
+        <th scope="col">Beneficiary Name</th>
+        <th scope="col">Beneficiary Account</th>
+        <th scope="col">Sort Code</th>
       </tr>
       <tr>
         <th></th>
@@ -78,21 +82,27 @@
 
       {% csrf_token %}
       <div id="transaction-table">
-        {% if transactions %}
-        {% for transaction in transactions %}
-        <tr>
-          <td>
-            <input type="checkbox" name="transaction" value="{{ transaction.id }}">
-          </td>
-          <td>{{ transaction.idbank }}</td>
-          <td>{{ transaction.datermit }}</td>
-          <td>{{ transaction.amtpaym }}</td>
-          <td>{{ transaction.codecurn }}</td>
-          <td>{{ transaction.rateexchhc }}</td>
-          <td>{{ transaction.paymcode }}</td>
-          <td>{{ transaction.idvend }}</td>
-        </tr>
-        {% endfor %}
+        {% if transaction_info and vendor_info %}
+          {% for transaction in transaction_info %}
+          <tr>
+            <td>
+              <input type="checkbox" name="transaction" value="{{ transaction.idinvc }}">
+            </td>
+            <td>{{ transaction.datermit }}</td>
+            <td>{{ transaction.amtpaym }}</td>
+            <td>{{ transaction.codecurn }}</td>
+            <td>{{ transaction.idinvc }}</td>
+            <td>{{ transaction.idvend }}</td>
+            {% for vendor in vendor_info %}
+              {% if transaction.idvend == vendor.vendorid %}
+                <td>{{ vendor.accname }}</td>
+                <td>{{ vendor.accno }}</td>
+                <td>{{ vendor.bsbno }}</td>
+              {% endif %}
+            {% endfor %}
+
+          </tr>
+          {% endfor %}
   
         {% else %}
         <tr>
@@ -103,7 +113,7 @@
 
       {% if request.path == '/payment-api/dashboard/transactions/' %}
       <!-- Render the "Process Transaction" button -->
-        <button class="btn btn-primary" id="process-btn" disabled>Process Selected Transaction(s)</button>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#post-transaction-model" id="process-btn" disabled>Process Selected Transaction(s)</button>
       {% endif %}
 
      </form>

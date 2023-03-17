@@ -1,0 +1,37 @@
+<!--Modal Popup--> 
+<div class="modal fade" id="post-transaction-model" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLongTitle">Transactions To Post</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+            <table class="table table-hover mt-3">
+                <thead>
+                  <tr>
+                    <th scope="col"></th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col">Currency</th>
+                    <th scope="col">Invoice Number</th>
+                    <th scope="col">Beneficiary ID</th>
+                    <th scope="col">Beneficiary Name</th>
+                    <th scope="col">Beneficiary Account</th>
+                    <th scope="col">Sort Code</th>
+                  </tr>
+                </thead>
+                <tbody id="modal-table-body">
+                    <!--Transactions to be posted will be dynamically added here-->
+                </tbody>
+              </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" id="modal-submit-btn" class="btn btn-primary">Post Transactions</button>
+        </div>
+      </div>
+    </div>
+  </div>
