@@ -1,12 +1,11 @@
-import json
 import requests
-from django.shortcuts import render
-from django.http import JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse
+from django.shortcuts import render
 
+from .helpers import format_request_data, CustomPaginator
 # Create your views here.
 from .models import Transactions, Vendors
-from .helpers import format_request_data
 
 
 def is_ajax(request):
@@ -14,11 +13,23 @@ def is_ajax(request):
     return request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
 
 
+def paginate_data(data, page_number, page_size=10):
+    """ Paginate data """
+    paginator = CustomPaginator(data, page_size)
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+    return page_obj, paginator.num_pages
+
+
 def display_transactions(request):
     """
-    Display datermit, idinvc, amtpaym, codecurn, idvend From the transactions 
-    table and bsbno, accno, accname From the Vendors table where idvend in transactions table is equal to vendorid 
-    in vendors table and pass it to the template as one data structure
+        Display datermit, idinvc, amtpaym, codecurn, idvend From the transactions table and bsbno,
+        accno, accname From the Vendors table where idvend in transactions table is equal to vendorid
+        in vendors table and pass it to the template
     """
     if request.method == 'GET':
         try:
@@ -26,11 +37,11 @@ def display_transactions(request):
                                                            'codecurn', 'rateexchhc', 'idinvc').order_by('-datermit',
                                                                                                         '-idvend').all()
             vendor_info = Vendors.objects.values('vendorid', 'bsbno', 'accno', 'accname').all()
-            paginator = Paginator(transaction_info, 10)
 
             page_number = request.GET.get('page')
-            type(page_number)
-            page_obj = paginator.get_page(page_number)
+            if page_number is None:
+                page_number = 1
+            page_obj, number_of_pages = paginate_data(transaction_info, page_number)
             return render(request, 'transactions/dashboard.html',
                           {'transaction_info': page_obj, 'vendor_info': vendor_info})
         except Exception as e:
@@ -50,37 +61,23 @@ def search_idvend(request):
             return JsonResponse([], safe=False)
 
 
-def search_idinvc(request):
-    """ Search by idinvc in Request list and return JSON resposne if found """
-    if request.method == 'GET':
-        try:
-            # Get invoice ids from request
-            invoice_ids = request.GET.get('invoice_ids')
-            if invoice_ids:
-                transactions = Transactions.objects.filter(idinvc__in=invoice_ids).values('idbank', 'idvend',
-                                                                                          'datermit', 'amtpaym',
-                                                                                          'paymcode', 'codecurn',
-                                                                                          'rateexchhc', 'idinvc').all()
-                return JsonResponse(list(transactions), safe=False)
-            else:
-                return JsonResponse({'message': 'No invoice ids provided'}, safe=False)
-        except Exception as e:
-            print(e)
-            message = 'Error: ' + str(e)
-            return JsonResponse({'message': message}, safe=False)
-
-
 def get_idvend_transactions(request):
     """ Search by idvend and return JSON response if found """
     if request.method == 'GET':
         try:
             vendor_id = request.GET.get('vendor_id')
-            transaction_info = Transactions.objects.filter(idvend=vendor_id).values('idvend', 'datermit', 'amtpaym',
-                                                                                    'codecurn', 'idinvc')[:10]
+            transaction_info = Transactions.objects.filter(idvend=vendor_id).values(
+                'idvend', 'datermit', 'amtpaym', 'codecurn', 'idinvc').order_by('-datermit').all()
             vendor_info = Vendors.objects.filter(vendorid=vendor_id).values('vendorid', 'bsbno', 'accno',
                                                                             'accname').all()
-            return JsonResponse({'transaction_info': list(transaction_info), 'vendor_info': list(vendor_info)},
-                                safe=False)
+            page_number = request.GET.get('page_number')
+            if page_number is None:
+                page_data, number_of_pages = paginate_data(transaction_info, 1)
+                return JsonResponse({'transaction_info': list(page_data),
+                                     'vendor_info': list(vendor_info), 'number_of_pages': number_of_pages}, safe=False)
+            page_data, number_of_pages = paginate_data(transaction_info, int(page_number))
+            return JsonResponse({'transaction_info': list(page_data),
+                                 'vendor_info': list(vendor_info), 'number_of_pages': number_of_pages}, safe=False)
         except Exception as e:
             print(e)
             return JsonResponse([], safe=False)
@@ -114,8 +111,8 @@ def get_beneficiaries():
     pass
 
 
-# Function that receives request of posted transactions and sends them to an api endpoint and returns a response
 def post_transactions(request):
+    """ Post transactions to API endpoint """
     if request.method == 'POST':
         invoice_ids = format_request_data(request.POST.get('invoice_ids[]'))
         transaction_info = Transactions.objects.filter(idinvc__in=invoice_ids).values('idbank', 'idvend', 'amtpaym',
