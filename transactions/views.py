@@ -1,5 +1,5 @@
 import requests
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.paginator import EmptyPage, PageNotAnInteger
 from django.http import JsonResponse
 from django.shortcuts import render
 
@@ -61,6 +61,16 @@ def search_idvend(request):
             return JsonResponse([], safe=False)
 
 
+def format_response_data(page_number, transaction_info, vendor_info):
+    """ Format Response data and return a dictionary containing the data"""
+    if page_number is None:
+        page_data, number_of_pages = paginate_data(transaction_info, 1)
+        return {'transaction_info': list(page_data), 'vendor_info': list(vendor_info),
+                'number_of_pages': number_of_pages}
+    page_data, number_of_pages = paginate_data(transaction_info, int(page_number))
+    return {'transaction_info': list(page_data), 'vendor_info': list(vendor_info), 'number_of_pages': number_of_pages}
+
+
 def get_idvend_transactions(request):
     """ Search by idvend and return JSON response if found """
     if request.method == 'GET':
@@ -70,20 +80,14 @@ def get_idvend_transactions(request):
                 'idvend', 'datermit', 'amtpaym', 'codecurn', 'idinvc').order_by('-datermit').all()
             vendor_info = Vendors.objects.filter(vendorid=vendor_id).values('vendorid', 'bsbno', 'accno',
                                                                             'accname').all()
-            page_number = request.GET.get('page_number')
-            if page_number is None:
-                page_data, number_of_pages = paginate_data(transaction_info, 1)
-                return JsonResponse({'transaction_info': list(page_data),
-                                     'vendor_info': list(vendor_info), 'number_of_pages': number_of_pages}, safe=False)
-            page_data, number_of_pages = paginate_data(transaction_info, int(page_number))
-            return JsonResponse({'transaction_info': list(page_data),
-                                 'vendor_info': list(vendor_info), 'number_of_pages': number_of_pages}, safe=False)
+            return JsonResponse(format_response_data(request.GET.get('page_number'),
+                                                     transaction_info, vendor_info), safe=False)
         except Exception as e:
             print(e)
             return JsonResponse([], safe=False)
 
 
-def search_idinvc(request):
+def search_invoice_id(request):
     """ Search by idinvc in Request list and return JSON resposne if found """
     if request.method == 'POST':
         if is_ajax(request):
@@ -94,17 +98,8 @@ def search_idinvc(request):
                     'idbank', 'idvend', 'datermit', 'amtpaym', 'codecurn', 'idinvc').order_by('-datermit',
                                                                                               '-idvend').all()
                 vendor_info = Vendors.objects.values('vendorid', 'bsbno', 'accno', 'accname').all()
-
-                page_number = request.POST.get('page_number')
-                if page_number is None:
-                    page_data, number_of_pages = paginate_data(transaction_info, 1)
-                    return JsonResponse({'transaction_info': list(page_data),
-                                         'number_of_pages': number_of_pages}, safe=False)
-
-                page_data, number_of_pages = paginate_data(transaction_info, int(page_number))
-
-                return JsonResponse({'transaction_info': list(transaction_info), 'vendor_info': list(vendor_info),
-                                     'number_of_pages': number_of_pages}, safe=False)
+                return JsonResponse(format_response_data(request.GET.get('page_number'),
+                                                         transaction_info, vendor_info), safe=False)
             except Exception as e:
                 print(e)
                 message = 'Error: ' + str(e)
