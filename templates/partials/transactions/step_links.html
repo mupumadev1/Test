@@ -1,17 +1,21 @@
-<div class="pagination">
-    <span class="step-links">
+<div id="pagination">
+    <span id="step-links">
         {% if transaction_info.has_previous %}
-            <a href="?page=1">&laquo; first</a>
-            <a href="?page={{ transaction_info.previous_page_number }}">previous</a>
+            <a href="?page=1" id="first">&laquo; first</a>
+            <a href="?page={{ transaction_info.previous_page_number }}" id="previous">previous</a>
+
+            {% else %}
+            <a href="?page=1" id="first" class="d-none">&laquo; first</a>
+            <a href="?page={{ transaction_info.previous_page_number }}" id="previous" class="d-none">previous</a>
         {% endif %}
 
-        <span class="current">
+        <span id="current">
             Page {{ transaction_info.number }} of {{ transaction_info.paginator.num_pages }}.
         </span>
 
         {% if transaction_info.has_next %}
-            <a href="?page={{ transaction_info.next_page_number }}">next</a>
-            <a href="?page={{ transaction_info.paginator.num_pages }}">last &raquo;</a>
+            <a href="?page={{ transaction_info.next_page_number }}" id="next">next</a>
+            <a href="?page={{ transaction_info.paginator.num_pages }}" id="last">last &raquo;</a>
         {% endif %}
     </span>
 </div>

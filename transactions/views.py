@@ -14,7 +14,7 @@ def is_ajax(request):
 
 
 def paginate_data(data, page_number, page_size=10):
-    """ Paginate data """
+    """ Paginate data and return page object and number of pages """
     paginator = CustomPaginator(data, page_size)
     try:
         page_obj = paginator.page(page_number)
@@ -65,7 +65,7 @@ def get_idvend_transactions(request):
     """ Search by idvend and return JSON response if found """
     if request.method == 'GET':
         try:
-            vendor_id = request.GET.get('vendor_id')
+            vendor_id = request.GET.get('id')
             transaction_info = Transactions.objects.filter(idvend=vendor_id).values(
                 'idvend', 'datermit', 'amtpaym', 'codecurn', 'idinvc').order_by('-datermit').all()
             vendor_info = Vendors.objects.filter(vendorid=vendor_id).values('vendorid', 'bsbno', 'accno',
@@ -94,8 +94,17 @@ def search_idinvc(request):
                     'idbank', 'idvend', 'datermit', 'amtpaym', 'codecurn', 'idinvc').order_by('-datermit',
                                                                                               '-idvend').all()
                 vendor_info = Vendors.objects.values('vendorid', 'bsbno', 'accno', 'accname').all()
-                return JsonResponse({'transaction_info': list(transaction_info), 'vendor_info': list(vendor_info)},
-                                    safe=False)
+
+                page_number = request.POST.get('page_number')
+                if page_number is None:
+                    page_data, number_of_pages = paginate_data(transaction_info, 1)
+                    return JsonResponse({'transaction_info': list(page_data),
+                                         'number_of_pages': number_of_pages}, safe=False)
+
+                page_data, number_of_pages = paginate_data(transaction_info, int(page_number))
+
+                return JsonResponse({'transaction_info': list(transaction_info), 'vendor_info': list(vendor_info),
+                                     'number_of_pages': number_of_pages}, safe=False)
             except Exception as e:
                 print(e)
                 message = 'Error: ' + str(e)

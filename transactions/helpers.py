@@ -17,7 +17,7 @@ def format_request_data(request_data):
 
 
 class CustomPaginator(Paginator):
-    """ Custom paginator class to validate page number """
+    """ Custom paginator class that overrides validate_number function """
 
     def validate_number(self, number):
         """Validate the given 1-based page number."""

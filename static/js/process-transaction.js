@@ -1,12 +1,20 @@
 const processBtn = document.getElementById('process-btn');
-const searchResultsTable = document.getElementById('table-body');
 const searchVendorInput = document.getElementById('search-vendor-id');
 const modalSubmitBtn = document.getElementById('modal-submit-btn');
+
+const nextPage = document.getElementById('next');
+const lastPage = document.getElementById('last');
+const previousPage = document.getElementById('previous');
+const firstPage = document.getElementById('first');
+const currentPage = document.getElementById('current');
 
 var searchResults = document.getElementById('search-results');
 var checkboxes = document.querySelectorAll('input[type="checkbox"]');
 
 var selectedVendorsInvoiceNumber = [];
+var pageNumber = 1;
+var numberOfPages = 0;
+var vendorID = '';
 
 // Add selected vendors to array
 function addselectedVendorsInvoiceNumber(invoiceId) {
@@ -43,7 +51,7 @@ function addEventListenerToCheckboxes(checkboxes) {
 }
 
 /* Function to change checkbox to checked if vendor id 
-is in array and new table results are dispalyed */
+is in array and new table results are displayed */
 function checkCheckboxIfVendorIdIsInArray(checkboxes) { 
   checkboxes.forEach(cb => {
     if (selectedVendorsInvoiceNumber.includes(cb.value)) {
@@ -90,6 +98,47 @@ function createTableBody(transactionInfo, vendorInfo, tableBodyID) {
 
 }
 
+// Function to get New Paginated Page Data, Pagination Page Number, Increment Page Size and Decrement Page Size
+function getNewPaginatedPageData(increment, decrement, url, id, tbody) {
+    if (pageNumber <= 1 && decrement > 0) {
+        pageNumber = 1;
+    } else {
+        pageNumber -= decrement;
+    }
+    pageNumber += increment;
+
+    currentPage.textContent = `Page ${pageNumber} of ${numberOfPages}.`;
+
+    // Check if it has previous page
+    if (pageNumber <= 1) {
+        previousPage.classList.add('d-none');
+        console.log(previousPage)
+    } else {
+        previousPage.classList.remove('d-none');
+        previousPage.href = `${url}?id=${id}&page=${pageNumber-1}`;
+    }
+
+    // Check if it has next page
+    if (pageNumber === numberOfPages) {
+        nextPage.classList.add('d-none');
+    } else {
+      nextPage.classList.remove('d-none');
+      nextPage.href = `${url}?id=${id}&page=${pageNumber+1}`;
+    }
+
+    // Get new page data
+    fetch(`${url}?id=${id}&page_number=${pageNumber}`).then(
+        res => res.json()).then(transactions => {
+        // Add new transactions
+        createTableBody(transactions.transaction_info, transactions.vendor_info, tbody);
+        // Add event listener to checkboxes
+        checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        addEventListenerToCheckboxes(checkboxes);
+        checkCheckboxIfVendorIdIsInArray(checkboxes);
+        console.log(transactions);
+    })
+}
+
 
 // Add event listener to checkboxes
 addEventListenerToCheckboxes(checkboxes);
@@ -131,15 +180,41 @@ searchVendorInput.addEventListener('input', () => {
           // Prevent default behavior
           e.preventDefault();
           // Get transactions for vendor and display results in table body
-          fetch(`get-vendor-transactions/?vendor_id=${option.idvend}`).then(res => res.json())
+          fetch(`get-vendor-transactions/?id=${option.idvend}&page_number=1`).then(res => res.json())
           .then(transactions => {
-            // Add new transactions
-            createTableBody(transactions.transaction_info, transactions.vendor_info, 'table-body');
-
+            vendorID =  option.idvend;
+             // Add new transactions
+             createTableBody(transactions.transaction_info, transactions.vendor_info, 'table-body');
              // Add event listener to checkboxes
              checkboxes = document.querySelectorAll('input[type="checkbox"]');
              addEventListenerToCheckboxes(checkboxes);
              checkCheckboxIfVendorIdIsInArray(checkboxes);
+             // Perform Actions on Steps Links
+             numberOfPages = transactions.number_of_pages
+             currentPage.textContent = `Page 1 of ${numberOfPages}.`;
+
+             firstPage.addEventListener('click', (e) => {
+                e.preventDefault();
+                pageNumber = 1
+                getNewPaginatedPageData(0, 0, 'get-vendor-transactions/', vendorID, 'table-body');
+             });
+
+             lastPage.addEventListener('click', (e) => {
+                  e.preventDefault();
+                pageNumber = numberOfPages;
+                getNewPaginatedPageData(0, 0, 'get-vendor-transactions/', vendorID, 'table-body');
+             });
+
+             nextPage.addEventListener('click', (e) => {
+                e.preventDefault();
+                getNewPaginatedPageData(1, 0, 'get-vendor-transactions/', vendorID, 'table-body');
+             });
+
+             previousPage.addEventListener('click', (e) => {
+                e.preventDefault();
+                getNewPaginatedPageData(0, 1, 'get-vendor-transactions/', vendorID, 'table-body');
+             });
+
           });
 
         });
@@ -157,14 +232,7 @@ const csrfToken = document.cookie.split('; ').find(row => row.startsWith('csrfto
 
 // Add Event Listener to process button
 processBtn.addEventListener('click', (e) => {
-  // Prevent Defualt Behavior
   e.preventDefault();
-
-  // Get post transaction modal & modal table body
-  const postTransactionModal = document.getElementById('post-transaction-model');
-  const postTransactionModalTableBody = document.getElementById('post-transaction-modal-table-body');
-
-  postTransactionModal.classList.add('show');
 
   // Send selected invoice numbers to server using ajax
   $.ajax({
