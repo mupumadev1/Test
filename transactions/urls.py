@@ -3,7 +3,7 @@ from django.urls import path
 
 # Import views
 from django.views.generic import TemplateView
-from .views import (search_idvend, display_transactions, 
+from .views import (search_idvend, display_transactions,
                     get_idvend_transactions, search_invoice_id, post_transactions)
 
 

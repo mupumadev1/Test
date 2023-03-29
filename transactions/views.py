@@ -140,7 +140,7 @@ def post_transactions(request):
         beneficiaries = get_beneficiaries()
 
         # Create a list of dictionaries of transactions to be sent to the api endpoint
-        ftList = [{
+        ft_list = [{
             "amount": vendor_dict[vendor]['amtpaym'],
             "remarks": "Payment for invoice",
             "bankCode": vendor_dict[vendor]['idbank'],
@@ -159,7 +159,7 @@ def post_transactions(request):
             "beneTransfer": False,
         } for vendor in vendor_dict]
 
-        print(ftList)
+        print(ft_list)
 
         # Send the list of transactions to the api endpoint
         url = 'https://api.test.com/ft'
@@ -167,7 +167,7 @@ def post_transactions(request):
         params = {
             "service": "CORE_BANKING_FT",
             "request": {
-                "ftList": ftList
+                "ftList": ft_list
             }
         }
 

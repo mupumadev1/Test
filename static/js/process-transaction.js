@@ -1,38 +1,41 @@
 const processBtn = document.getElementById('process-btn');
 const searchVendorInput = document.getElementById('search-vendor-id');
 const modalSubmitBtn = document.getElementById('modal-submit-btn');
+const checkboxes = document.querySelectorAll('input[type="checkbox"]');
 
-const nextPage = document.getElementById('next');
-const lastPage = document.getElementById('last');
-const previousPage = document.getElementById('previous');
-const firstPage = document.getElementById('first');
+const nextPageLink = document.getElementById('next');
+const lastPageLink = document.getElementById('last');
+const previousPageLink = document.getElementById('previous');
+const firstPageLink = document.getElementById('first');
 const currentPage = document.getElementById('current');
 
-var searchResults = document.getElementById('search-results');
-var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+const searchResults = document.getElementById('search-results');
 
-var selectedVendorsInvoiceNumber = [];
-var pageNumber = 1;
-var numberOfPages = 0;
-var vendorID = '';
+let selectedVendorsInvoiceNumber = [];
+let selectedPageNumber = 1;
+let numberOfPages = 0;
+let hasClickedOnSearchResults = false;
+let vendor_id = '';
 
-// Add selected vendors to array
-function addselectedVendorsInvoiceNumber(invoiceId) {
-  // Check if invoice id is already in array
+
+function addSelectedVendorsInvoiceNumber(invoiceId) {
+  /**
+   * Add selected vendors to array
+   */
   if (!selectedVendorsInvoiceNumber.includes(invoiceId)) {
     selectedVendorsInvoiceNumber.push(invoiceId);
   }
 }
 
-// function to add event listener to checkboxes that checks if they are checked or not
 function addEventListenerToCheckboxes(checkboxes) {
-  // Add event listener to checkboxes
+  /**
+   * Add event listener to checkboxes
+   */
   checkboxes.forEach(cb => {
-    cb.addEventListener('change', function() {
-      // Check if checkbox is checked
+    cb.addEventListener('change', () => {
       if (cb.checked) {
         // Add vendor id to array
-        addselectedVendorsInvoiceNumber(cb.value);
+        addSelectedVendorsInvoiceNumber(cb.value);
       } else {
         // Remove vendor id from array
         selectedVendorsInvoiceNumber = selectedVendorsInvoiceNumber.filter(vendor => vendor !== cb.value);
@@ -40,19 +43,16 @@ function addEventListenerToCheckboxes(checkboxes) {
       
       // Check if at least one checkbox is checked and disable button if none is checked
       const isChecked = Array.from(checkboxes).some(cb => cb.checked);
-      if (!isChecked) {
-        processBtn.disabled = true;
-      } else {    
-        processBtn.disabled = false;
-      }
+      processBtn.disabled = !isChecked;
 
     });
   });
 }
 
-/* Function to change checkbox to checked if vendor id 
-is in array and new table results are displayed */
-function checkCheckboxIfVendorIdIsInArray(checkboxes) { 
+function checkCheckboxIfVendorIdIsInArray(checkboxes) {
+  /**
+   * Check if vendor id is in array and change checkbox to checked if it is
+   */
   checkboxes.forEach(cb => {
     if (selectedVendorsInvoiceNumber.includes(cb.value)) {
       cb.checked = true;
@@ -60,16 +60,29 @@ function checkCheckboxIfVendorIdIsInArray(checkboxes) {
   });
 }
 
-/* Function that takes the vendor_info and transaction_info
-   and returns the html table body elements  */
-function createTableBody(transactionInfo, vendorInfo, tableBodyID) {
-  // Get table body element
-  const tableBody = document.getElementById(tableBodyID);
+function getCheckboxes() {
+    /**
+     *  Get all checkboxes, add event listener to them and check if they are checked or not
+     */
+    let checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    addEventListenerToCheckboxes(checkboxes);
+    checkCheckboxIfVendorIdIsInArray(checkboxes);
+}
+
+function createTableBody(transactionInfo, vendorInfo, tableBodyID, msg) {
+    /**
+     * Create new table body elements and add them to the table body
+     * @param {Array} transactionInfo - Array of transaction objects
+     * @param {Array} vendorInfo - Array of vendor objects
+     * @param {String} tableBodyID - ID of table body element
+     */
+    console.log(msg)
+  let tableBody = document.getElementById(tableBodyID);
+    console.log(tableBodyID)
   tableBody.innerHTML = '';
-  // Create new html form elements and add csrf_token
+
   const searchResultsTableForm = document.createElement('form');
   searchResultsTableForm.method = 'POST';
-  searchResultsTableForm.innerHTML = '{% csrf_token %}'
 
   // Add new transactions
   transactionInfo.forEach(transaction => {
@@ -85,76 +98,131 @@ function createTableBody(transactionInfo, vendorInfo, tableBodyID) {
       <td>${transaction.idvend}</td>
       `;
       vendorInfo.forEach(vendor => {
-      if (transaction.idvend === vendor.vendorid) {
-        tr.innerHTML += `
-          <td>${vendor.accname}</td>
-          <td>${vendor.accno}</td>
-          <td>${vendor.bsbno}</td>
-        `
-      }
-    });
+          if (transaction.idvend === vendor.vendorid) {
+            tr.innerHTML += `
+              <td>${vendor.accname}</td>
+              <td>${vendor.accno}</td>
+              <td>${vendor.bsbno}</td>
+            `
+          }
+      });
     tableBody.appendChild(tr);
   })
+}
+
+function checkIfPageHasNextOrPreviousPage() {
+    /**
+     *  Check if page has next or previous page
+     */
+  // Check if page has next or previous page
+  if (selectedPageNumber === 1) {
+    previousPageLink.classList.add('d-none');
+    if (numberOfPages === 1) {
+      nextPageLink.classList.add('d-none');
+    }
+  } else {
+    previousPageLink.classList.remove('d-none');
+  }
+
+  if (selectedPageNumber === numberOfPages) {
+    nextPageLink.classList.add('d-none');
+  } else {
+    nextPageLink.classList.remove('d-none');
+  }
+}
+
+function nextPage() {
+  /**
+   *  Go to next page
+   */
+  if (selectedPageNumber !== numberOfPages) {
+    selectedPageNumber += 1;
+  }
+
+  goToPage(`get-vendor-transactions/`, 'table-body');
 
 }
 
-// Function to get New Paginated Page Data, Pagination Page Number, Increment Page Size and Decrement Page Size
-function getNewPaginatedPageData(increment, decrement, url, id, tbody) {
-    if (pageNumber <= 1 && decrement > 0) {
-        pageNumber = 1;
-    } else {
-        pageNumber -= decrement;
-    }
-    pageNumber += increment;
+function previousPage() {
+  /**
+   *  Go to previous page
+   */
+  if (selectedPageNumber !== 1) {
+    selectedPageNumber -= 1;
+  }
 
-    currentPage.textContent = `Page ${pageNumber} of ${numberOfPages}.`;
-
-    // Check if it has previous page
-    if (pageNumber <= 1) {
-        previousPage.classList.add('d-none');
-        console.log(previousPage)
-    } else {
-        previousPage.classList.remove('d-none');
-        previousPage.href = `${url}?id=${id}&page=${pageNumber-1}`;
-    }
-
-    // Check if it has next page
-    if (pageNumber === numberOfPages) {
-        nextPage.classList.add('d-none');
-    } else {
-      nextPage.classList.remove('d-none');
-      nextPage.href = `${url}?id=${id}&page=${pageNumber+1}`;
-    }
-
-    // Get new page data
-    fetch(`${url}?id=${id}&page_number=${pageNumber}`).then(
-        res => res.json()).then(transactions => {
-        // Add new transactions
-        createTableBody(transactions.transaction_info, transactions.vendor_info, tbody);
-        // Add event listener to checkboxes
-        checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        addEventListenerToCheckboxes(checkboxes);
-        checkCheckboxIfVendorIdIsInArray(checkboxes);
-        console.log(transactions);
-    })
+  goToPage(`get-vendor-transactions/`, 'table-body');
 }
 
+function checkIfLastPage() {
+  /**
+   * Check If the selected page is the last page
+   * */
+
+   if (selectedPageNumber === numberOfPages) {
+    lastPageLink.classList.add('d-none');
+  } else {
+    lastPageLink.classList.remove('d-none');
+  }
+
+}
+
+function checkIfFirstPage(){
+  /**
+   * Check if the selected page is the first page
+   * */
+    if (selectedPageNumber === 1) {
+        firstPageLink.classList.add('d-none');
+    } else {
+        firstPageLink.classList.remove('d-none');
+    }
+}
+
+async function goToPage(url, tbody) {
+  /**
+   *  Get New Paginated Page Data, Pagination Page Number and Number of Pages
+   *  @param {String} url - URL to send ajax request to
+   *  @param {String} tbody - ID of table body element
+   */
+
+  currentPage.textContent = `Page ${selectedPageNumber} of ${numberOfPages}.`;
+
+  checkIfFirstPage();
+  checkIfLastPage();
+  checkIfPageHasNextOrPreviousPage();
+
+  try {
+    // Send ajax request to server to retrieve new paginated data
+    const res = await fetch(`${url}?id=${vendor_id}&page_number=${selectedPageNumber}`);
+    const data = await res.json();
+    const transactionInfo = data.transaction_info;
+    const vendorInfo = data.vendor_info;
+
+    // Create new table body
+    createTableBody(transactionInfo, vendorInfo, tbody, 'goToPage Function');
+
+
+    // Get checkboxes
+    getCheckboxes();
+  } catch (err) {
+    console.log(err);
+  }
+}
 
 // Add event listener to checkboxes
 addEventListenerToCheckboxes(checkboxes);
 
 // Add event listener to search vendor_id input
-searchVendorInput.addEventListener('input', () => {
+searchVendorInput.addEventListener('input', async () => {
   const searchInput = searchVendorInput.value;
 
-  // Send ajax request to server to retrieve matching vendors
-  fetch(`search/?vendor_id=${searchInput}`).then(res => res.json())
-  .then(options => {
-    // clear existing options
-    searchResults.innerHTML = '';
+  try {
+    // Send ajax request to server to retrieve matching vendors
+    const res = await fetch(`search/?vendor_id=${searchInput}`);
+    const vendorIds = await res.json();
 
-    // Add ul tag
-    var searchResultsList = document.createElement('ul');
+    searchResults.innerHTML = '';
+    let searchResultsList = document.createElement('ul');
     searchResultsList.classList.add('list-unstyled');
     searchResultsList.id = 'search-results-list';
 
@@ -162,96 +230,116 @@ searchVendorInput.addEventListener('input', () => {
     searchResults.appendChild(searchResultsList);
 
     // Add new options
-    if (options.length > 0) {
+    if (vendorIds.length > 0) {
       //show select element
       searchResults.classList.remove('d-none');
-      options.forEach(option => {
+
+      for (const vendorID of vendorIds) {
         // Create list item
         const listItm = document.createElement('li');
         const link = document.createElement('a');
-        link.href = `get-vendor-transactions/?vendor_id=${option.idvend}`;
-        link.textContent = option.idvend;
+        link.href = `get-vendor-transactions/?vendor_id=${vendorID.idvend}`;
+        link.textContent = vendorID.idvend;
         link.classList.add('text-dark', 'w-100', 'h-100', 'p-2');
         listItm.appendChild(link);
         searchResultsList.appendChild(listItm);
 
         // Add event listener to each link
-        link.addEventListener('click', (e) => {
-          // Prevent default behavior
+        link.addEventListener('click', async (e) => {
           e.preventDefault();
-          // Get transactions for vendor and display results in table body
-          fetch(`get-vendor-transactions/?id=${option.idvend}&page_number=1`).then(res => res.json())
-          .then(transactions => {
-            vendorID =  option.idvend;
-             // Add new transactions
-             createTableBody(transactions.transaction_info, transactions.vendor_info, 'table-body');
-             // Add event listener to checkboxes
-             checkboxes = document.querySelectorAll('input[type="checkbox"]');
-             addEventListenerToCheckboxes(checkboxes);
-             checkCheckboxIfVendorIdIsInArray(checkboxes);
-             // Perform Actions on Steps Links
-             numberOfPages = transactions.number_of_pages
-             currentPage.textContent = `Page 1 of ${numberOfPages}.`;
+          hasClickedOnSearchResults = true;
 
-             firstPage.addEventListener('click', (e) => {
-                e.preventDefault();
-                pageNumber = 1
-                getNewPaginatedPageData(0, 0, 'get-vendor-transactions/', vendorID, 'table-body');
-             });
+          try {
+            // Get transactions for vendor and display results in table body
+            const res = await fetch(`get-vendor-transactions/?id=${vendorID.idvend}&page_number=1`);
+            const transactions = await res.json();
+            createTableBody(transactions.transaction_info, transactions.vendor_info, 'table-body', 'Search Vendor Input');
 
-             lastPage.addEventListener('click', (e) => {
-                  e.preventDefault();
-                pageNumber = numberOfPages;
-                getNewPaginatedPageData(0, 0, 'get-vendor-transactions/', vendorID, 'table-body');
-             });
 
-             nextPage.addEventListener('click', (e) => {
-                e.preventDefault();
-                getNewPaginatedPageData(1, 0, 'get-vendor-transactions/', vendorID, 'table-body');
-             });
+            getCheckboxes();
 
-             previousPage.addEventListener('click', (e) => {
-                e.preventDefault();
-                getNewPaginatedPageData(0, 1, 'get-vendor-transactions/', vendorID, 'table-body');
-             });
+            // Perform Actions on Steps Links
+            numberOfPages = transactions.number_of_pages;
+            currentPage.textContent = `Page 1 of ${numberOfPages}.`;
+            vendor_id = vendorID.idvend;
+            checkIfPageHasNextOrPreviousPage();
 
-          });
-
+          } catch (error) {
+            console.error(error);
+          }
         });
-      });
-
+      }
     } else {
       //hide select element
       searchResults.classList.add('d-none');
     }
-  });
-}) 
+  } catch (error) {
+    console.error(error);
+  }
+});
 
-// Get csrf token from cookie
-const csrfToken = document.cookie.split('; ').find(row => row.startsWith('csrftoken')).split('=')[1];
+// Add event listener to change page links
+nextPageLink.addEventListener('click', (e) => {
+  if (hasClickedOnSearchResults === true) {
+    e.preventDefault();
+    nextPage();
+
+  }
+});
+
+previousPageLink.addEventListener('click', (e) => {
+    if (hasClickedOnSearchResults === true) {
+        e.preventDefault();
+        previousPage();
+    }
+});
+
+lastPageLink.addEventListener('click', (e) => {
+  if (hasClickedOnSearchResults === true) {
+    e.preventDefault();
+    selectedPageNumber = numberOfPages;
+    goToPage(`get-vendor-transactions/`, 'table-body');
+  }
+});
+
+firstPageLink.addEventListener('click', (e) => {
+  if (hasClickedOnSearchResults === true){
+    e.preventDefault();
+    selectedPageNumber = 1;
+   goToPage(`get-vendor-transactions/`, 'table-body');
+  }
+});
+
+
+
+function getCSRFToken() {
+    let csrfToken = document.cookie.split('; ').find(row => row.startsWith('csrftoken')).split('=')[1];
+    if (csrfToken == null) {
+        csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+    }
+    return csrfToken;
+}
+
 
 // Add Event Listener to process button
 processBtn.addEventListener('click', (e) => {
   e.preventDefault();
 
-  // Send selected invoice numbers to server using ajax
+  // Send selected invoice numbers to server using aja
   $.ajax({
     type: 'POST',
     url: 'search-invoices/',
     data: {
-      'csrfmiddlewaretoken': csrfToken,
+      'csrfmiddlewaretoken': getCSRFToken(),
       'invoice_ids[]': JSON.stringify(selectedVendorsInvoiceNumber),
     },
     dataType: 'json',
   }).then(transactions => {
     createTableBody(transactions.transaction_info, transactions.vendor_info, 'modal-table-body');
-    console.log(transactions.transaction_info);
     // Add event listener to checkboxes
-    checkboxes = document.querySelectorAll('input[type="checkbox"]');
-    addEventListenerToCheckboxes(checkboxes);
-    checkCheckboxIfVendorIdIsInArray(checkboxes);
+    getCheckboxes();
   }).catch(err => console.log(err));
-  
+
 });
 
 // Add event listener to modal submit button
@@ -263,7 +351,7 @@ modalSubmitBtn.addEventListener('click', (e) => {
     type: 'POST',
     url: 'post-transactions/',
     data: {
-      'csrfmiddlewaretoken': csrfToken,
+      'csrfmiddlewaretoken': getCSRFToken(),
       'invoice_ids[]': JSON.stringify(selectedVendorsInvoiceNumber),
     },
     dataType: 'json',
