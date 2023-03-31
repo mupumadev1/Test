@@ -49,18 +49,6 @@ def display_transactions(request):
             return render(request, 'transactions/dashboard.html', {'transactions': []}, {'vendors': []})
 
 
-def search_idvend(request):
-    """ Search by idvend and return JSON response if found """
-    if request.method == 'GET':
-        try:
-            vendor_id = request.GET.get('vendor_id')
-            vendor_ids = Transactions.objects.filter(idvend__icontains=vendor_id).values('idvend')[:5]
-            return JsonResponse(list(vendor_ids), safe=False)
-        except Exception as e:
-            print(e)
-            return JsonResponse([], safe=False)
-
-
 def format_response_data(page_number, transaction_info, vendor_info):
     """ Format Response data and return a dictionary containing the data"""
     if page_number is None:
@@ -108,7 +96,60 @@ def search_invoice_id(request):
             return JsonResponse({'message': 'Not an ajax request'}, safe=False)
     else:
         return JsonResponse({'message': 'Not a POST request'}, safe=False)
+    
 
+def get_search_results(request):
+    """ Get search results based on query parameters """
+    if request.method == 'GET':
+        try:
+            # Dictionary containing field mapping parameters
+            field_mapping_transactions = {
+                'vendor_id': 'idvend__icontains',
+                'date': 'datermit__icontains',
+                # A query to get the amount that is equal to amount in request
+                'amount': 'amtpaym',
+                'invoice_id': 'idinvc__icontains',
+            }
+
+            field_mapping_vendor = {
+                'account_number': 'accno__icontains',
+                'account_name': 'accname__icontains',
+                'sort_code': 'bsbno__icontains',
+                'bank_name': 'bankname__icontains',
+            }
+
+            search_params = request.GET.get('search_params')
+            field_option = request.GET.get('filter_options')
+            page_number = 1 if request.GET.get('page_number') is None else request.GET.get('page_number')
+
+            if field_option in field_mapping_transactions and search_params:
+                transaction_info = Transactions.objects.filter(**{field_mapping_transactions[field_option]: search_params}).values(
+                    'idbank', 'idvend', 'datermit', 'amtpaym', 'codecurn', 'idinvc').order_by('-datermit',
+                                                                                              '-idvend').all()
+                vendor_ids = [transaction['idvend'] for transaction in transaction_info]
+                vendor_info = Vendors.objects.filter(vendorid__in=vendor_ids).values('vendorid', 'bsbno', 'accno',
+                                                                                     'accname').all()
+                return JsonResponse(format_response_data(page_number, transaction_info, vendor_info), safe=False)
+
+            elif field_option in field_mapping_vendor and search_params:
+                vendor_info = Vendors.objects.filter(**{field_mapping_vendor[field_option]: search_params}).values(
+                    'vendorid', 'bsbno', 'accno', 'accname').all()
+                vendor_ids = [vendor['vendorid'] for vendor in vendor_info]
+                transaction_info = Transactions.objects.filter(idvend__in=vendor_ids).values(
+                    'idbank', 'idvend', 'datermit', 'amtpaym', 'codecurn', 'idinvc').order_by('-datermit',
+                                                                                              '-idvend').all()
+                return JsonResponse(format_response_data(page_number, transaction_info, vendor_info), safe=False)
+            else:
+                return JsonResponse({'transaction_info': list([]), 'vendor_info': list([]),
+                'number_of_pages': 1}, safe=False)
+
+        except Exception as e:
+            print(e)
+            message = 'Error: ' + str(e)
+            return JsonResponse({'message': message}, safe=False)
+    else:
+
+        return JsonResponse({'message': 'Not a GET request'}, safe=False)
 
 # function to get list of beneficiaries from API endpoint
 def get_beneficiaries():
