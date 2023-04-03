@@ -6,8 +6,6 @@ const checkboxes = document.querySelectorAll('input[type="checkbox"]');
 const searchInput = document.getElementById('search-input');
 const filterOptions = document.getElementById('filter-options');
 
-const transactionType = document.querySelector('select[name="transaction_type"]');
-
 const nextPageLink = document.getElementById('next');
 const lastPageLink = document.getElementById('last');
 const previousPageLink = document.getElementById('previous');
@@ -30,15 +28,88 @@ function addSelectedVendorsInvoiceNumber(invoiceId) {
   }
 }
 
-function addEventListenerToCheckboxes(checkboxes) {
-  /**
+let selectedTransactionType = {}
+
+ /**
+     * Saves selected transaction type for a particular transaction in selectedTransactionType Objects DS
+     * @param {String} invoiceNumber - Invoice Number for Selected Transaction
+     * @param {String} transactionType - Transaction Type E.g. NFS, RTGS or DDUC
+     * @throws {Error} - If transaction type is invalid
+     * */
+function saveSelectedTransactionType(invoiceNumber, transactionType) {
+
+
+    const validTransactionTypes = new Set(["NFS", "RTGS", "DDUC" ]);
+    if (validTransactionTypes.has(transactionType) )  {
+       selectedTransactionType[invoiceNumber] = transactionType;
+    } else {
+        throw new Error('Invalid Transaction Type');
+    }
+}
+
+/** loops through the rows of a table and saves the selected transaction
+ * types in an object called selectedTransactionType.
+ * @param {String} tableID - ID for Table
+ * */
+function saveSelectedRows(tableID) {
+    let rows = document.querySelectorAll(`#${tableID} tr`);
+
+    rows.forEach((row) => {
+        let cb = row.querySelector('td input[type="checkbox"]')
+        if(cb.checked) {
+           let transactionType = row.querySelector('td select[name="transaction_type"]').value;
+           saveSelectedTransactionType(cb.value, transactionType);
+        }
+      }
+    )
+}
+
+function updateTransactionType(tableID) {
+    let rows = document.querySelectorAll(`#${tableID} tr`);
+
+    rows.forEach((row) => {
+        let cb = row.querySelector('td input[type="checkbox"]');
+        let invoiceID = cb.value;
+        if(isTransactionTypeSaved(invoiceID)) {
+           let transactionType = row.querySelector('td select[name="transaction_type"]');
+           transactionType.value = selectedTransactionType[invoiceID]
+        }
+      }
+    )
+}
+
+/** Check if Transaction type is in selectedTransactionType
+ * @param {String} invoiceID - Invoice ID for a particular transaction
+ * @return {Boolean}
+ * */
+function isTransactionTypeSaved(invoiceID) {
+    return invoiceID in selectedTransactionType;
+}
+
+/** Adds Event Listener to Select Transactions DropDown That Listens for Change Events
+ * If value of Dropdown has changed,then save transaction type
+ */
+function addEventListenerToSelectTransactionType() {
+    const selectTransactionTypeFields = document.querySelectorAll('.custom-select');
+
+    for (let selectTransactionTypeField of selectTransactionTypeFields) {
+        selectTransactionTypeField.addEventListener('change', () => {
+            saveSelectedRows('table-body');
+        })
+    }
+}
+
+ /**
    * Add event listener to checkboxes
    */
+function addEventListenerToCheckboxes(checkboxes) {
+
   checkboxes.forEach(cb => {
     cb.addEventListener('change', () => {
       if (cb.checked) {
         // Add vendor id to array
         addSelectedVendorsInvoiceNumber(cb.value);
+        saveSelectedRows('table-body')
       } else {
         // Remove vendor id from array
         selectedVendorsInvoiceNumber = selectedVendorsInvoiceNumber.filter(vendor => vendor !== cb.value);
@@ -72,20 +143,17 @@ function getCheckboxes() {
     checkCheckboxIfVendorIdIsInArray(checkboxes);
 }
 
+/** Create new table body elements and add them to the table body
+    * @param {Array} transactionInfo - Array of transaction objects
+    * @param {Array} vendorInfo - Array of vendor objects
+    * @param {String} tableBodyID - ID of table body element  */
 function createTableBody(transactionInfo, vendorInfo, tableBodyID) {
-    /**
-     * Create new table body elements and add them to the table body
-     * @param {Array} transactionInfo - Array of transaction objects
-     * @param {Array} vendorInfo - Array of vendor objects
-     * @param {String} tableBodyID - ID of table body element
-     */
-
   let tableBody = document.getElementById(tableBodyID);
   tableBody.innerHTML = '';
 
   // Add new transactions
   if (transactionInfo.length > 0) {
-    for (transaction of transactionInfo) {
+    for (let transaction of transactionInfo) {
       const tr = document.createElement('tr');
       tr.innerHTML = `
              <td>
@@ -98,7 +166,7 @@ function createTableBody(transactionInfo, vendorInfo, tableBodyID) {
             <td>${transaction.idvend}</td>
       `;
 
-      for (vendor of vendorInfo) {
+      for (let vendor of vendorInfo) {
         if (transaction.idvend === vendor.vendorid) {
           tr.innerHTML += `
             <td>${ vendor.accname }</td>
@@ -130,20 +198,12 @@ function createTableBody(transactionInfo, vendorInfo, tableBodyID) {
     tableBody.appendChild(tr);
   }
 
-  console.log(tableBody)
+  updateTransactionType(tableBodyID);
 
 }
 
-
-
-
-
-
+/** Check if page has next or previous page */
 function checkIfPageHasNextOrPreviousPage() {
-    /**
-     *  Check if page has next or previous page
-     */
-  // Check if page has next or previous page
   if (selectedPageNumber === 1) {
     previousPageLink.classList.add('d-none');
     if (numberOfPages === 1) {
@@ -196,6 +256,8 @@ function checkIfLastPage() {
 
 }
 
+
+
 function checkIfFirstPage(){
   /**
    * Check if the selected page is the first page
@@ -207,7 +269,7 @@ function checkIfFirstPage(){
     }
 }
 
-async function goToPage(url, tbody) {
+async function goToPage(url, tbodyID) {
   /**
    *  Get New Paginated Page Data, Pagination Page Number and Number of Pages
    *  @param {String} url - URL to send ajax request to
@@ -228,11 +290,10 @@ async function goToPage(url, tbody) {
     const vendorInfo = data.vendor_info;
 
     // Create new table body
-    createTableBody(transactionInfo, vendorInfo, tbody, 'goToPage Function');
-
-
-    // Get checkboxes
+    createTableBody(transactionInfo, vendorInfo, tbodyID, 'goToPage Function');
     getCheckboxes();
+
+    updateTransactionType(tbodyID);
   } catch (err) {
     console.log(err);
   }
@@ -249,14 +310,13 @@ async function searchDatabase(searchParams, filterOptions) {
 
       // Send ajax request to server to retrieve matching vendors
   const res = await fetch(`search/?search_params=${searchParams}&filter_options=${filterOptions}&page_number=1`);
-  const data = await res.json();
 
-  return data;
+  return await res.json();
 }
 
 // Add event listener to checkboxes
 addEventListenerToCheckboxes(checkboxes);
-
+addEventListenerToSelectTransactionType();
 
 // add event listener to search btn
 searchBtn.addEventListener('click', (e) => {
@@ -270,6 +330,7 @@ searchBtn.addEventListener('click', (e) => {
     queryResults.then((data) => {
         createTableBody(data.transaction_info, data.vendor_info, 'table-body');
         getCheckboxes();
+        addEventListenerToSelectTransactionType();
         numberOfPages = data.number_of_pages;
         currentPage.textContent = `Page 1 of ${numberOfPages}.`;
         query_params = [searchInput.value, filterOptions.value]
@@ -324,7 +385,6 @@ function getCSRFToken() {
 processBtn.addEventListener('click', (e) => {
   e.preventDefault();
 
-  // Send selected invoice numbers to server using aja
   $.ajax({
     type: 'POST',
     url: 'search-invoices/',
@@ -337,6 +397,9 @@ processBtn.addEventListener('click', (e) => {
     createTableBody(transactions.transaction_info, transactions.vendor_info, 'modal-table-body');
     // Add event listener to checkboxes
     getCheckboxes();
+    addEventListenerToSelectTransactionType();
+
+    updateTransactionType('modal-table-body');
   }).catch(err => console.log(err));
 
 });
@@ -352,6 +415,7 @@ modalSubmitBtn.addEventListener('click', (e) => {
     data: {
       'csrfmiddlewaretoken': getCSRFToken(),
       'invoice_ids[]': JSON.stringify(selectedVendorsInvoiceNumber),
+      'transaction_type': JSON.stringify(selectedTransactionType),
     },
     dataType: 'json',
   }).then(res => {

@@ -106,7 +106,6 @@ def get_search_results(request):
             field_mapping_transactions = {
                 'vendor_id': 'idvend__icontains',
                 'date': 'datermit__icontains',
-                # A query to get the amount that is equal to amount in request
                 'amount': 'amtpaym',
                 'invoice_id': 'idinvc__icontains',
             }
