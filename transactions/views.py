@@ -1,9 +1,11 @@
+import json
+
 import requests
 from django.core.paginator import EmptyPage, PageNotAnInteger
 from django.http import JsonResponse
 from django.shortcuts import render
 
-from .helpers import format_request_data, CustomPaginator
+from .helpers import CustomPaginator
 # Create your views here.
 from .models import Transactions, Vendors
 
@@ -81,7 +83,7 @@ def search_invoice_id(request):
         if is_ajax(request):
             try:
                 # Get invoice ids from request
-                invoice_ids = format_request_data(request.POST.get('invoice_ids[]'))
+                invoice_ids = json.loads(request.POST.get('invoice_ids[]'))
                 transaction_info = Transactions.objects.filter(idinvc__in=invoice_ids).values(
                     'idbank', 'idvend', 'datermit', 'amtpaym', 'codecurn', 'idinvc').order_by('-datermit',
                                                                                               '-idvend').all()
@@ -96,7 +98,7 @@ def search_invoice_id(request):
             return JsonResponse({'message': 'Not an ajax request'}, safe=False)
     else:
         return JsonResponse({'message': 'Not a POST request'}, safe=False)
-    
+
 
 def get_search_results(request):
     """ Get search results based on query parameters """
@@ -122,7 +124,8 @@ def get_search_results(request):
             page_number = 1 if request.GET.get('page_number') is None else request.GET.get('page_number')
 
             if field_option in field_mapping_transactions and search_params:
-                transaction_info = Transactions.objects.filter(**{field_mapping_transactions[field_option]: search_params}).values(
+                transaction_info = Transactions.objects.filter(
+                    **{field_mapping_transactions[field_option]: search_params}).values(
                     'idbank', 'idvend', 'datermit', 'amtpaym', 'codecurn', 'idinvc').order_by('-datermit',
                                                                                               '-idvend').all()
                 vendor_ids = [transaction['idvend'] for transaction in transaction_info]
@@ -140,27 +143,28 @@ def get_search_results(request):
                 return JsonResponse(format_response_data(page_number, transaction_info, vendor_info), safe=False)
             else:
                 return JsonResponse({'transaction_info': list([]), 'vendor_info': list([]),
-                'number_of_pages': 1}, safe=False)
+                                     'number_of_pages': 1}, safe=False)
 
         except Exception as e:
             print(e)
             message = 'Error: ' + str(e)
             return JsonResponse({'message': message}, safe=False)
     else:
-
         return JsonResponse({'message': 'Not a GET request'}, safe=False)
 
-# function to get list of beneficiaries from API endpoint
+
 def get_beneficiaries():
+    """ Get beneficiaries from API endpoint """
     pass
 
 
 def post_transactions(request):
     """ Post transactions to API endpoint """
     if request.method == 'POST':
-        invoice_ids = format_request_data(request.POST.get('invoice_ids[]'))
+        invoice_ids = json.loads(request.POST.get('invoice_ids[]'))
+        transaction_type = json.loads(request.POST.get('transaction_type'))
         transaction_info = Transactions.objects.filter(idinvc__in=invoice_ids).values('idbank', 'idvend', 'amtpaym',
-                                                                                      'codecurn').all()
+                                                                                      'codecurn', 'idinvc').all()
         vendor_ids = [transaction['idvend'] for transaction in transaction_info]
         vendor_info = Vendors.objects.filter(vendorid__in=vendor_ids).values('vendorid', 'bsbno', 'accno',
                                                                              'accname').all()
@@ -174,7 +178,7 @@ def post_transactions(request):
             if transaction['idvend'] in vendor_dict:
                 vendor_dict[transaction['idvend']].update(
                     {'idbank': transaction['idbank'], 'amtpaym': transaction['amtpaym'],
-                     'codecurn': transaction['codecurn']})
+                     'codecurn': transaction['codecurn'], 'transaction_type': transaction_type[transaction['idinvc']]})
 
         # Get List of beneficiaries
         beneficiaries = get_beneficiaries()
@@ -195,7 +199,7 @@ def post_transactions(request):
             "sourceBranch": "000000",
             "srcCurrency": vendor_dict[vendor]['codecurn'],
             "swiftCode": "00000",
-            "transferType": "IAT",
+            "transferType": vendor_dict[vendor]['transaction_type'],
             "beneTransfer": False,
         } for vendor in vendor_dict]
 

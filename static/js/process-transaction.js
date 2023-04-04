@@ -18,11 +18,10 @@ let numberOfPages = 0;
 let hasClickedOnSearchBtn = false;
 let query_params = [];
 
-
-function addSelectedVendorsInvoiceNumber(invoiceId) {
-  /**
+ /**
    * Add selected vendors to array
    */
+function addSelectedVendorsInvoiceNumber(invoiceId) {
   if (!selectedVendorsInvoiceNumber.includes(invoiceId)) {
     selectedVendorsInvoiceNumber.push(invoiceId);
   }
@@ -37,8 +36,6 @@ let selectedTransactionType = {}
      * @throws {Error} - If transaction type is invalid
      * */
 function saveSelectedTransactionType(invoiceNumber, transactionType) {
-
-
     const validTransactionTypes = new Set(["NFS", "RTGS", "DDUC" ]);
     if (validTransactionTypes.has(transactionType) )  {
        selectedTransactionType[invoiceNumber] = transactionType;
@@ -406,9 +403,8 @@ processBtn.addEventListener('click', (e) => {
 
 // Add event listener to modal submit button
 modalSubmitBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-
-  // Send selected invoice numbers to server using ajax
+  e.preventDefault()
+  // Send selected invoice numbers & transaction type to server using ajax
   $.ajax({
     type: 'POST',
     url: 'post-transactions/',
